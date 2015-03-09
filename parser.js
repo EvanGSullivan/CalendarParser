@@ -91,13 +91,19 @@ listOfCalendars.forEach(function (calendar)
                 }
             }
         });
-
-        // Print out all calendar events.
-        for (var i = 0; i < allCalendarEvents.length; i++) {
-            console.log("New Event");
-            console.log("\tSummary: " + allCalendarEvents[i].summary);
-            console.log("\tStart: " + allCalendarEvents[i].start);
-            console.log("\tEnd: " + allCalendarEvents[i].end);
-        }
     });
 });
+
+var sortedEvents = {};
+for (var i = 0; i < allCalendarEvents.length; i++) {
+    sortedEvents[allCalendarEvents[i].start] = allCalendarEvents[i];
+}
+
+var count = 1;
+for(var event in sortedEvents) {
+    console.log("Event " + count);
+    console.log("\tSummary: " + event.summary);
+    console.log("\tStart: " + event.start);
+    console.log("\tEnd: " + event.end);
+    count++;
+}
