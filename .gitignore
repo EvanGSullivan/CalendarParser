@@ -1,0 +1,11 @@
+node_modules
+.idea
+app/components
+app/node_modules
+build
+cache
+dist
+
+mocha-results.txt
+npm-debug.log
+credentials.txt

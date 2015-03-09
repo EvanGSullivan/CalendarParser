@@ -1,0 +1,12 @@
+{
+    "main": "parser.html",
+    "name": "CalendarParser",
+    "version": "0.0.0",
+    "description": "For to help.",
+    "private": "true",
+
+    "devDependencies":
+    {
+        "nodewebkit": "^0.11.6"
+    }
+}
