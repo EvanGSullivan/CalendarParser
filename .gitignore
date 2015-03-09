@@ -2,6 +2,7 @@ node_modules
 .idea
 app/components
 app/node_modules
+Calendars to parse
 build
 cache
 dist

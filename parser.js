@@ -1,108 +1,103 @@
+////////////////////////////////////////////////////
+// Example calendar entry:
+
+/*
+ BEGIN:VEVENT
+ CREATED:20130107T032631Z
+ UID:84F105B6-80BA-4D81-92E7-34F94AF6C93D
+ DTEND;VALUE=DATE:20130120
+ TRANSP:TRANSPARENT
+ SUMMARY:Slade coming?
+ DTSTART;VALUE=DATE:20130119
+ DTSTAMP:20130107T032655Z
+ SEQUENCE:3
+ BEGIN:VALARM
+ X-WR-ALARMUID:BBCC6899-07AD-472A-9BB1-70875CA478B2
+ UID:BBCC6899-07AD-472A-9BB1-70875CA478B2
+ TRIGGER:-PT15H
+ X-APPLE-DEFAULT-ALARM:TRUE
+ ATTACH;VALUE=URI:Basso
+ ACTION:AUDIO
+ END:VALARM
+ END:VEVENT
+ */
+////////////////////////////////////////////////////
+
 var fs = require('fs');
 var assert = require('assert');
 
-fs.readFile( __dirname + '/Calendars to parse/Just Paws.ics', function (err, data)
+
+var listOfCalendars = [
+    "/Calendars to parse/Add On.ics",
+    "/Calendars to parse/Home.ics",
+    "/Calendars to parse/Just Paws.ics",
+    "/Calendars to parse/Miss Ashley Art.ics",
+    "/Calendars to parse/Work.ics"];
+
+var allCalendarEvents = [];
+
+listOfCalendars.forEach(function (calendar)
 {
-    if (err)
-    {
-        throw err;
-    }
-
-    var calendar = data.toString();
-    var calendarLines = calendar.split('\n');
-
-    var CalendarEvent = function(summary, start, end)
-    {
-        this.summary = summary;
-        this.start = start;
-        this.end = end;
-        /*console.log("New Event");
-        console.log("\tSummary: " + this.summary);
-        console.log("\tStart: " + this.start);
-        console.log("\tEnd: " + this.end);*/
-    };
-
-    // Get all of the events from one calendar and put them in an array of CalendarEvents.
-    var summary;
-    var start;
-    var end;
-    var lastLineRead = "DTEND";
-    var encounteredFirstSummary = false;
-    var allCalendarEvents = [];
-
-    calendarLines.forEach(function(line)
-    {
-        if (line.indexOf("SUMMARY") >= 0)
-        {
-            encounteredFirstSummary = true;
-
-            assert(lastLineRead == "DTEND");
-            lastLineRead = "SUMMARY";
-
-            summary = line.substring(line.indexOf(':') + 1, line.length);
+    fs.readFile(__dirname + calendar, function (err, data) {
+        if (err) {
+            throw err;
         }
 
-        if (encounteredFirstSummary == true)
-        {
-            if (line.indexOf("DTSTART") >= 0)
-            {
-                assert(lastLineRead == "SUMMARY");
-                lastLineRead = "DTSTART";
+        var calendar = data.toString();
+        var calendarLines = calendar.split('\n');
 
-                start = line.substring(line.indexOf(':') + 1, line.length);
-            }
+        var CalendarEvent = function (summary, start, end) {
+            this.summary = summary;
+            this.start = start;
+            this.end = end;
+        };
 
-            else if (line.indexOf("DTEND") >= 0)
-            {
+        // Get all of the events from one calendar and put them in an array of CalendarEvents.
+        var summary;
+        var start;
+        var end;
+        var lastLineRead = "DTSTART";
+        var encounteredFirstEnd = false;
+
+        calendarLines.forEach(function (line) {
+            // Look first for a DTEND. This should be the first of the three important fields that we encounter.
+            if (line.indexOf("DTEND") >= 0) {
                 assert(lastLineRead == "DTSTART");
                 lastLineRead = "DTEND";
 
+                encounteredFirstEnd = true;
                 end = line.substring(line.indexOf(':') + 1, line.length);
-
-                var newCalendarEvent = new CalendarEvent(summary, start, end);
-                allCalendarEvents[allCalendarEvents.length] = newCalendarEvent;
             }
+
+            if (encounteredFirstEnd == true) {
+                // Once we encounter our first DTEND, look for a SUMMARY.
+                if (line.indexOf("SUMMARY") >= 0) {
+                    assert(lastLineRead == "DTEND");
+                    lastLineRead = "SUMMARY";
+
+                    summary = line.substring(line.indexOf(':') + 1, line.length);
+                }
+
+                // Once we've encountered a SUMMARY, look for a DTSTART.
+                // This is the last piece of an event we care about.
+                else if (line.indexOf("DTSTART") >= 0) {
+                    assert(lastLineRead == "SUMMARY");
+                    lastLineRead = "DTSTART";
+
+                    start = line.substring(line.indexOf(':') + 1, line.length);
+
+                    var newCalendarEvent = new CalendarEvent(summary, start, end);
+                    allCalendarEvents[allCalendarEvents.length] = newCalendarEvent;
+                }
+            }
+        });
+
+        // Print out all calendar events.
+        for (var i = 0; i < allCalendarEvents.length; i++) {
+            console.log("New Event");
+            console.log("\tSummary: " + allCalendarEvents[i].summary);
+            console.log("\tStart: " + allCalendarEvents[i].start);
+            console.log("\tEnd: " + allCalendarEvents[i].end);
         }
     });
-
-    // Print out all calendar events.
-    for (var i = 0; i < allCalendarEvents.length; i++)
-    {
-        console.log("New Event");
-        console.log("\tSummary: " + allCalendarEvents[i].summary);
-        console.log("\tStart: " + allCalendarEvents[i].start);
-        console.log("\tEnd: " + allCalendarEvents[i].end);
-    }
 });
-
-
-
-
-/*
-from os import listdir
-from os.path import isfile, join
-
-class Event:
-	def __init__(self, title, date, time, length):
-		self.title = title
-		self.date = date
-		self.time = time
-		self.length = length
-
-# Open the calendar files
-def loadAllIcals(path = ''):
-	return listdir("Calendars to parse")
-
-# Read a calendar's contents into a list of event data structures (mm-dd-yyyy, time, length, title)
-def parseCalendar(calendarPath):
-	f = open("Calendars to parse/" + calendarPath, 'r')
-	for line in f:
-		if "SUMMARY" in line:
-			print line
-
-if __name__ == "__main__":
-	calendars = loadAllIcals()
-	#for calendar in calendars:
-	#	parseCalendar(calendar)
-	parseCalendar(calendars[2])
-*/
