@@ -16,18 +16,19 @@ fs.readFile( __dirname + '/Calendars to parse/Just Paws.ics', function (err, dat
         this.summary = summary;
         this.start = start;
         this.end = end;
-        console.log("New Event")
+        /*console.log("New Event");
         console.log("\tSummary: " + this.summary);
         console.log("\tStart: " + this.start);
-        console.log("\tEnd: " + this.end);
+        console.log("\tEnd: " + this.end);*/
     };
 
+    // Get all of the events from one calendar and put them in an array of CalendarEvents.
     var summary;
     var start;
     var end;
     var lastLineRead = "DTEND";
     var encounteredFirstSummary = false;
-    //var allCalendarEvents = {};
+    var allCalendarEvents = [];
 
     calendarLines.forEach(function(line)
     {
@@ -58,16 +59,20 @@ fs.readFile( __dirname + '/Calendars to parse/Just Paws.ics', function (err, dat
 
                 end = line.substring(line.indexOf(':') + 1, line.length);
 
-                newCalendarEvent = new CalendarEvent(summary, start, end);
-                //allCalendarEvents.add(newCalendarEvent);
+                var newCalendarEvent = new CalendarEvent(summary, start, end);
+                allCalendarEvents[allCalendarEvents.length] = newCalendarEvent;
             }
         }
-    })
+    });
 
-    /*allCalendarEvents.forEach(function(calendarEvent)
+    // Print out all calendar events.
+    for (var i = 0; i < allCalendarEvents.length; i++)
     {
-        console.log()
-    })*/
+        console.log("New Event");
+        console.log("\tSummary: " + allCalendarEvents[i].summary);
+        console.log("\tStart: " + allCalendarEvents[i].start);
+        console.log("\tEnd: " + allCalendarEvents[i].end);
+    }
 });
 
 
