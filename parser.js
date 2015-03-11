@@ -25,6 +25,7 @@
 
 var fs = require('fs');
 var assert = require('assert');
+var q = require('q');
 
 
 var listOfCalendars = [
@@ -33,77 +34,93 @@ var listOfCalendars = [
     "/Calendars to parse/Just Paws.ics",
     "/Calendars to parse/Miss Ashley Art.ics",
     "/Calendars to parse/Work.ics"];
+var calendarCount = listOfCalendars.length;
+
+var CalendarEvent = function (summary, start, end) {
+    this.summary = summary;
+    this.start = start;
+    this.end = end;
+};
 
 var allCalendarEvents = [];
 
-listOfCalendars.forEach(function (calendar)
-{
-    fs.readFile(__dirname + calendar, function (err, data) {
-        if (err) {
-            throw err;
-        }
-
-        var calendar = data.toString();
-        var calendarLines = calendar.split('\n');
-
-        var CalendarEvent = function (summary, start, end) {
-            this.summary = summary;
-            this.start = start;
-            this.end = end;
-        };
-
-        // Get all of the events from one calendar and put them in an array of CalendarEvents.
-        var summary;
-        var start;
-        var end;
-        var lastLineRead = "DTSTART";
-        var encounteredFirstEnd = false;
-
-        calendarLines.forEach(function (line) {
-            // Look first for a DTEND. This should be the first of the three important fields that we encounter.
-            if (line.indexOf("DTEND") >= 0) {
-                assert(lastLineRead == "DTSTART");
-                lastLineRead = "DTEND";
-
-                encounteredFirstEnd = true;
-                end = line.substring(line.indexOf(':') + 1, line.length);
+var promise = q.Promise(function(resolve, reject, notify) {
+    listOfCalendars.forEach(function (calendar) {
+        fs.readFile(__dirname + calendar, function (err, data) {
+            if (err) {
+                throw err;
             }
 
-            if (encounteredFirstEnd == true) {
-                // Once we encounter our first DTEND, look for a SUMMARY.
-                if (line.indexOf("SUMMARY") >= 0) {
-                    assert(lastLineRead == "DTEND");
-                    lastLineRead = "SUMMARY";
+            var calendar = data.toString();
+            var calendarLines = calendar.split('\n');
 
-                    summary = line.substring(line.indexOf(':') + 1, line.length);
+            // Get all of the events from one calendar and put them in an array of CalendarEvents.
+            var summary;
+            var start;
+            var end;
+            var lastLineRead = "DTSTART";
+            var encounteredFirstEnd = false;
+
+            calendarLines.forEach(function (line) {
+                // Look first for a DTEND. This should be the first of the three important fields that we encounter.
+                if (line.indexOf("DTEND") >= 0) {
+                    assert(lastLineRead == "DTSTART");
+                    lastLineRead = "DTEND";
+
+                    encounteredFirstEnd = true;
+                    end = line.substring(line.indexOf(':') + 1, line.length);
                 }
 
-                // Once we've encountered a SUMMARY, look for a DTSTART.
-                // This is the last piece of an event we care about.
-                else if (line.indexOf("DTSTART") >= 0) {
-                    assert(lastLineRead == "SUMMARY");
-                    lastLineRead = "DTSTART";
+                if (encounteredFirstEnd == true) {
+                    // Once we encounter our first DTEND, look for a SUMMARY.
+                    if (line.indexOf("SUMMARY") >= 0) {
+                        assert(lastLineRead == "DTEND");
+                        lastLineRead = "SUMMARY";
 
-                    start = line.substring(line.indexOf(':') + 1, line.length);
+                        summary = line.substring(line.indexOf(':') + 1, line.length);
+                    }
 
-                    var newCalendarEvent = new CalendarEvent(summary, start, end);
-                    allCalendarEvents[allCalendarEvents.length] = newCalendarEvent;
+                    // Once we've encountered a SUMMARY, look for a DTSTART.
+                    // This is the last piece of an event we care about.
+                    else if (line.indexOf("DTSTART") >= 0) {
+                        assert(lastLineRead == "SUMMARY");
+                        lastLineRead = "DTSTART";
+
+                        start = line.substring(line.indexOf(':') + 1, line.length);
+
+                        var newCalendarEvent = new CalendarEvent(summary, start, end);
+                        allCalendarEvents[allCalendarEvents.length] = newCalendarEvent;
+                    }
                 }
-            }
+            });
         });
+
+        calendarCount--;
+        if (calendarCount == 0) {
+            resolve();
+        }
     });
 });
 
-var sortedEvents = {};
-for (var i = 0; i < allCalendarEvents.length; i++) {
-    sortedEvents[allCalendarEvents[i].start] = allCalendarEvents[i];
-}
+promise.then(
+    function onFulfilled() {
+        // Promise kept. :)
+        var sortedEvents = {};
+        for (var i = 0; i < allCalendarEvents.length; i++) {
+            sortedEvents[allCalendarEvents[i].start] = allCalendarEvents[i];
+        }
 
-var count = 1;
-for(var event in sortedEvents) {
-    console.log("Event " + count);
-    console.log("\tSummary: " + event.summary);
-    console.log("\tStart: " + event.start);
-    console.log("\tEnd: " + event.end);
-    count++;
-}
+        var count = 1;
+        for (var event in sortedEvents) {
+            console.log("Event " + count);
+            console.log("\tSummary: " + event.summary);
+            console.log("\tStart: " + event.start);
+            console.log("\tEnd: " + event.end);
+            count++;
+        }
+    },
+    function onRejected(error) {
+        // Promise broken. :(
+        console.log("error");
+    }
+);
