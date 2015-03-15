@@ -172,12 +172,14 @@ function removeOutsideDateRange(rangeStart, rangeEnd) {
     for (var i = startIndex; i < allCalendarEvents.length - 1; i++) {
         // If an event starts before the rangeEnd cutoff, it's included.
         var endCompare = compareDateTimes(allCalendarEvents[i].start, rangeEnd);
-        if (endCompare <= 0) {
+        if (endCompare < 0) {
             endIndex = i;
         }
     }
 
-    allCalendarEvents = allCalendarEvents.subarray(startIndex, endIndex);
+    // I'm not sure if slice is safe to assign directly back to the array being sliced, so I'm using a temp.
+    var temp = allCalendarEvents.slice(startIndex, endIndex + 1);
+    allCalendarEvents = temp;
 }
 
 function sortCalendars() {
