@@ -182,7 +182,7 @@ function removeOutsideDateRange(rangeStart, rangeEnd) {
 
 function sortCalendars() {
     allCalendarEvents.sort(function (x, y) {
-        compareDateTimes(x.start, y.start);
+        return compareDateTimes(x.start, y.start);
     });
 };
 
