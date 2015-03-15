@@ -39,11 +39,11 @@ function DateTime(year, month, day, hour, minute) {
     this.minute = minute;
 };
 DateTime.prototype.print = function() {
-    return this.month + "/" +
-        this.day + "/" +
+    return (this.month < 10 ? "0" + this.month : this.month) + "/" +
+        (this.day < 10 ? "0" + this.day : this.day) + "/" +
         this.year + " at " +
-        this.hour + ":" +
-        this.minute;
+        (this.hour < 10 ? "0" + this.hour : this.hour) + ":" +
+        (this.minute < 10 ? "0" + this.minute : this.minute);
 }
 
 ////////////////////////////////////////////////////
@@ -130,6 +130,7 @@ promise.then(
 
         sortCalendars();
         removeOutsideDateRange(new DateTime(2014, 01, 01, 00, 00), new DateTime(2015, 01, 01, 00, 00));
+        insertVisitsHome();
         printCalendars();
     },
     function onRejected(error) {
@@ -153,6 +154,25 @@ function getDateTime(lineIn)
         endMinute = Number(sub.substring(11, 13));
     }
     return new DateTime(endYear, endMonth, endDay, endHour, endMinute);
+}
+
+function insertVisitsHome() {
+    // If there's more than an hour between two events, insert a visit back home.
+    for (var i = 1; i < allCalendarEvents.length; i++) {
+        if (timeBetweenEvents(allCalendarEvents[i-1].end, allCalendarEvents[i].start) >= 60) {
+            var event = new CalendarEvent("Home", allCalendarEvents[i-1].end, allCalendarEvents[i].start);
+            allCalendarEvents.splice(i, 0, event);
+        }
+    }
+}
+
+function timeBetweenEvents(event1, event2) {
+    var yearDifferenceInMinutes = (event2.year - event1.year) * 60 * 24 * 365; // The 365 should take into account leap years.
+    var monthDifferenceInMinutes = (event2.month - event1.month) * 60 * 24 * 30; // The 30 should be based on how long the actual months were between event1 and event2.
+    var dayDifferenceInMinutes = (event2.day - event1.day) * 60 * 24;
+    var hourDifferenceInMinutes = (event2.hour - event1.hour) * 60;
+    var minuteDifference = (event2.minute - event1.minute);
+    return yearDifferenceInMinutes + monthDifferenceInMinutes + dayDifferenceInMinutes + hourDifferenceInMinutes + minuteDifference;
 }
 
 // This functions assumes allCalendarEvents is sorted in ascending order by start dateTime.
@@ -210,9 +230,9 @@ function compareDateTimes(date1, date2) {
 
 function printCalendars() {
     for (var i = 0; i < allCalendarEvents.length; i++) {
-        console.log("Event " + i);
-        console.log("\tSummary: " + allCalendarEvents[i].summary);
+        console.log(i+1 + ". " + allCalendarEvents[i].summary);
         console.log("\tStart: " + allCalendarEvents[i].start.print());
         console.log("\tEnd: " + allCalendarEvents[i].end.print());
+        console.log();
     }
 };
