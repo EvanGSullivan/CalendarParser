@@ -97,6 +97,7 @@ var promise = q.Promise(function(resolve, reject, notify) {
                         lastLineRead = "SUMMARY";
 
                         summary = line.substring(line.indexOf(':') + 1, line.length);
+                        summary = summary.substring(0, summary.length - 1); // Strip off the trailing \r
                     }
 
                     // Once we've encountered a SUMMARY, look for a DTSTART.
@@ -130,8 +131,14 @@ promise.then(
 
         sortCalendars();
         removeOutsideDateRange(new DateTime(2014, 01, 01, 00, 00), new DateTime(2015, 01, 01, 00, 00));
-        insertVisitsHome();
-        printCalendars();
+        insertVisitsHome(); // If there's a gap of more than an hour, add a trip home.
+        //printCalendars();
+
+        var transitions = listAllUniqueTransitions();
+
+        //filterTransitions(transitions);
+
+        printUniqueTransitions(transitions);
     },
     function onRejected(error) {
         // Promise broken. :(
@@ -236,3 +243,50 @@ function printCalendars() {
         console.log();
     }
 };
+
+function listAllUniqueTransitions() {
+    var transitions = {};
+
+    for (var i = 1; i < allCalendarEvents.length; i++) {
+        // Get the two event names.
+        var event1 = allCalendarEvents[i-1].summary;
+        var event2 = allCalendarEvents[i].summary;
+
+        // Check if there is already an entry in transitions for this transition
+        var oneTotwo = event1 + " to " + event2;
+        var twoToOne = event2 + " to " + event1;
+        if (transitions.hasOwnProperty(oneTotwo)) {
+            transitions[oneTotwo]++;
+        }
+        else if (transitions.hasOwnProperty(twoToOne)) {
+            transitions[twoToOne]++;
+        }
+        else {
+            transitions[oneTotwo] = 1;
+        }
+    }
+
+    return transitions;
+}
+
+// Implementation not done. More trouble than it's worth, probably.
+function filterTransitions(transitions) {
+    var filters = ["jeff"];
+
+    var keys = transitions.keys();
+    var validTransitions = {};
+
+    for (var i = 0; i < keys.length; i++) {
+        if (!filters.contains(keys[i])) {
+            validtransitions[keys[i]] = transitions[keys[i]];
+        }
+    }
+
+    return validtransitions;
+}
+
+function printUniqueTransitions(transitions) {
+    for (key in transitions) {
+        console.log(transitions[key] + "\t" + key);
+    }
+}
