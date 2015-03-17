@@ -131,14 +131,16 @@ promise.then(
 
         sortCalendars();
         removeOutsideDateRange(new DateTime(2014, 01, 01, 00, 00), new DateTime(2015, 01, 01, 00, 00));
+        stripOutAllDayEvents(); // Get rid of any events that go from midnight that day to midnight the next day.
+
         insertVisitsHome(); // If there's a gap of more than an hour, add a trip home.
-        //printCalendars();
 
         var transitions = listAllUniqueTransitions();
 
         //filterTransitions(transitions);
-
         printUniqueTransitions(transitions);
+
+        saveToCSV(transitions);
     },
     function onRejected(error) {
         // Promise broken. :(
@@ -148,8 +150,7 @@ promise.then(
 
 ////////////////////////////////////////////////////
 // Functions
-function getDateTime(lineIn)
-{
+function getDateTime(lineIn) {
     var sub = lineIn.substring(lineIn.indexOf(':') + 1, lineIn.length);
     var endYear = Number(sub.substring(0, 4));
     var endMonth = Number(sub.substring(4, 6));
@@ -161,6 +162,20 @@ function getDateTime(lineIn)
         endMinute = Number(sub.substring(11, 13));
     }
     return new DateTime(endYear, endMonth, endDay, endHour, endMinute);
+}
+
+function stripOutAllDayEvents() {
+    for (var i = 0; i < allCalendarEvents.length; i++) {
+        var test = timeBetweenEvents(allCalendarEvents[i].start, allCalendarEvents[i].end);
+        if (//allCalendarEvents[i].start.hour == 0 && allCalendarEvents[i].start.minute == 0 &&
+            //allCalendarEvents[i].end.hour == 0 && allCalendarEvents[i].end.minute == 0 &&
+            timeBetweenEvents(allCalendarEvents[i].start, allCalendarEvents[i].end) == 60 * 24) {
+            //console.log("Removed: " + allCalendarEvents[i].summary);
+            //console.log("\t\tStart: " + allCalendarEvents[i].start.print());
+            //console.log("\t\tEnd: " + allCalendarEvents[i].end.print());
+            allCalendarEvents.splice(i, 1);
+        }
+    }
 }
 
 function insertVisitsHome() {
@@ -289,4 +304,16 @@ function printUniqueTransitions(transitions) {
     for (key in transitions) {
         console.log(transitions[key] + "\t" + key);
     }
+}
+
+// Strips commas from data and writes it out in CSV format.
+function saveToCSV(transitions) {
+    var outputStream = fs.createWriteStream('./output.csv');
+
+    for (key in transitions) {
+        var summary = key.replace(new RegExp('[,]', 'g'), '_');
+        outputStream.write(transitions[key] + "," + summary + "\n");
+    }
+
+    outputStream.end();
 }
